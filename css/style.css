@@ -1,0 +1,15 @@
+#map{ 
+    height: 600px;
+    width:900px;
+    align-items: center;
+    float:right;
+    /*display: inline-block;*/
+    
+}
+
+h1
+{ font-family: sans-serif;
+    font-size:24px;
+    text-align: center;
+    
+}
