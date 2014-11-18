@@ -1,5 +1,5 @@
 $(document).ready(function() {
-
+//
 	var cities;
 	var map = L.map('map', {
 			center: [37.8, -96],
