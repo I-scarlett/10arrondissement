@@ -1,80 +1,71 @@
 $(document).ready(function() {
 
-	var cities;
-	var map = L.map('map', {
-			center: [37.8, -96],
-			zoom: 4,
-			minZoom: 4
-		});
+	var markers;
+    L.mapbox.accessToken = 'pk.eyJ1Ijoic3poYW5nMjQ5IiwiYSI6Im9jN0UtRWMifQ.vCDJzEeXrVAIOFVLSD3Afg';
+    var map = L.mapbox.map('map', 'szhang249.i6n0bn3j');
+    map.setView([48.878, 2.358], 15);
 
-	L.tileLayer(
-		'http://{s}.acetate.geoiq.com/tiles/acetate/{z}/{x}/{y}.png', {
-			attribution: 'Acetate tileset from GeoIQ'
-	}).addTo(map);
+     
     
     
-    var layer = L.mapbox.tileLayer('examples.map-i86nkdio');
-layer.on('ready', function() {
-  // the layer has been fully loaded now, and you can
-  // call .getTileJSON and investigate its properties
-});
-
-	$.getJSON("data/city-data.json")
+	$.getJSON("data/Locations3.geojson")
 		.done(function(data) {
 
 			var info = processData(data);
-			createPropSymbols(info.timestamps, data);
-			createLegend(info.min,info.max);
-			createSliderUI(info.timestamps);
-
+			createPropSymbols(info, data);
+            //createLegend(info.min,info.max);
+			createSliderUI(info.pages);
+            menuSelection(info.SMs);
+            
 		})
 		.fail(function() { alert("There has been a problem loading the data.")});
 
-	function processData(data) {
-
-		var timestamps = [];
-		var	min = Infinity;
-		var	max = -Infinity;
-
-		for (var feature in data.features) {
+	function menuSelection(SMs) {
+        var SMOptions = [];
+        for (var index in SMs) {
+            SMOptions.push("<input type=\"checkbox\" value=\""+ SMs[index] +"\">" + SMs[index] + "</input>");
+        }
+        
+        $("#SubjectiveMarkers").html(SMOptions.join("<br />"));
+    }
+    
+    function processData(data) {
+        var pages = [];
+        var pageTracker = [];
+        var SMs = []
+        var SMTracker = [];
+        
+        for (var feature in data.features) {
 
 			var properties = data.features[feature].properties;
 
-			for (var attribute in properties) {
-
-				if ( attribute != 'id' &&
-					 attribute != 'name' &&
-					 attribute != 'lat' &&
-					 attribute != 'lon' )
-				{
-					if ( $.inArray(attribute,timestamps) ===  -1) {
-						timestamps.push(attribute);
-					}
-					if (properties[attribute] < min) {
-						min = properties[attribute];
-					}
-					if (properties[attribute] > max) {
-						max = properties[attribute];
-					}
-				}
-			}
+            if (pageTracker[properties.Page] === undefined) {
+                pages.push(properties.Page);
+                pageTracker[properties.Page] = 1;
+            }
+            
+            if (SMTracker[properties.SM] === undefined) {
+                SMs.push(properties.SM);
+                SMTracker[properties.SM] = 1;
+            }
 		}
-		return {
-			timestamps : timestamps,
-			min : Number(min),
-			max : Number(max)
-		}
-	}  // end processData()
-	function createPropSymbols(timestamps, data) {
+        return { 
+            SMs : SMs,
+            pages : pages.sort(function(a,b){return a - b}) 
+        };
+    }
+    
 
-		cities = L.geoJson(data, {
+    function createPropSymbols(info, data) {
+
+		markers = L.geoJson(data, {
 
 			pointToLayer: function(feature, latlng) {
 
 				return L.circleMarker(latlng, {
 
-                    fillColor: PropColor(Number(feature.properties[timestamps[0]])),
-				    color: PropColor(Number(feature.properties[timestamps[0]])),
+                    fillColor: PropColor(feature.properties.SM),
+				    color: PropColor(feature.properties.SM),
                     weight: 1,
 				    fillOpacity: 0.8
 
@@ -87,19 +78,20 @@ layer.on('ready', function() {
 					},
 					mouseout: function(e) {
 						this.closePopup();
-						this.setStyle({color: PropColor(Number(feature.properties[timestamps[0]])) });
+						this.setStyle({color: PropColor(feature.properties.SM) });
 
 					}
 				});
 			}
 		}).addTo(map);
 
-		updatePropSymbols(timestamps[0]);
+		updatePropSymbols();
         
 	} // end createPropSymbols()
     
     
     function PropColor(UVIndex) {
+        return "#c897d9";
         if(UVIndex >= "11") {
             return  "#b765a5";
         }
@@ -116,20 +108,20 @@ layer.on('ready', function() {
     
 
 
-        function updatePropSymbols(timestamp) {
+    function updatePropSymbols() {
 
-		cities.eachLayer(function(layer) {
+		markers.eachLayer(function(layer) {
 
 			var props = layer.feature.properties;
-			var	radius = calcPropRadius(props[timestamp]);
-			var	popupContent = " UV Index: <b>" + String(props[timestamp]) + "</b><br>"
-							   + "<i>" + props.name +
-							   "</i> in </i>" + timestamp + "</i>";
+			var	radius = calcPropRadius(props.SM);
+			var	popupContent = " In Page: <b>" + props.Page + "</b><br>"
+							   + "<i>" + props.SM +
+							   "</i> in </i>" + props.Address + "</i>";
             
 			layer.setRadius(radius);
 			layer.bindPopup(popupContent, { offset: new L.Point(0,-radius) });
-            layer.options.color = PropColor(Number(props[timestamp]));
-            layer.options.fillColor = PropColor(Number(props[timestamp]));
+            layer.options.color = PropColor(props.SM);
+            layer.options.fillColor = PropColor(props.SM);
 		});
 	} // end updatePropSymbols
     
@@ -138,7 +130,7 @@ layer.on('ready', function() {
 		var scaleFactor = 0.3,
 			area = attributeValue * attributeValue * scaleFactor;
 
-		return area;
+		return 5;
 
 	} // end calcPropRadius
 	function createLegend(min, max) {
@@ -199,7 +191,7 @@ layer.on('ready', function() {
 
 		legend.addTo(map);
 	} // end createLegend()
-	function createSliderUI(timestamps) {
+	function createSliderUI(pages) {
 
 		var sliderControl = L.control({ position: 'bottomleft'} );
 
@@ -215,10 +207,10 @@ layer.on('ready', function() {
 
 			$(slider)
 				.attr({'type':'range', 
-                       'max': timestamps[timestamps.length-1], 
-                       'min':timestamps[0], 
+                       'max': pages[pages.length-1], 
+                       'min':pages[0], 
                        'step': 1,
-                       'value': String(timestamps[0])})
+                       'value': String(pages[0])})
             
 		        .on('input change', function() {
 		        	updatePropSymbols($(this).val().toString());
@@ -229,7 +221,7 @@ layer.on('ready', function() {
 		}
 
 		sliderControl.addTo(map);
-		createTemporalLegend(timestamps[0]);
+		createTemporalLegend(pages[0]);
 	} // end createSliderUI()
     
 	function createTemporalLegend(startTimestamp) {
