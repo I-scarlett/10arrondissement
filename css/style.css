@@ -1,6 +1,6 @@
 #menu{
     height:600px;
-    width:200px;
+    width:280px;
     float:left;
     background-color: #e5cfef;
    
@@ -10,7 +10,7 @@
 
 #map{ 
     height: 600px;
-    width:900px;
+    width:75%;
     align-items: center;
     float:right;
     /*display: inline-block;*/
@@ -40,7 +40,8 @@ body{
             }
 
 div.scroll {
-    width: 200px;
-    height: 500px;
+    width: 280px;
+    height: 550px;
     overflow: scroll;
+    background-color: white;
 }

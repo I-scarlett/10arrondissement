@@ -1,6 +1,8 @@
 $(document).ready(function() {
 
 	var markers;
+    var SMFilter = [];
+    
     L.mapbox.accessToken = 'pk.eyJ1Ijoic3poYW5nMjQ5IiwiYSI6Im9jN0UtRWMifQ.vCDJzEeXrVAIOFVLSD3Afg';
     var map = L.mapbox.map('map', 'szhang249.i6n0bn3j');
     map.setView([48.878, 2.358], 15);
@@ -15,20 +17,34 @@ $(document).ready(function() {
 			createPropSymbols(info, data);
             //createLegend(info.min,info.max);
 			createSliderUI(info.pages);
-            menuSelection(info.SMs);
+            menuSelection(info.SMs, info, data);
+            updateMenu(info, data);
+            
             
 		})
 		.fail(function() { alert("There has been a problem loading the data.")});
-
-	function menuSelection(SMs) {
+    
+	function menuSelection(SMs, info, data) {
         var SMOptions = [];
         for (var index in SMs) {
-            SMOptions.push("<input type=\"checkbox\" value=\""+ SMs[index] +"\">" + SMs[index] + "</input>");
+            SMOptions.push("<input type=\"checkbox\" name=\"SMFilter\" value=\""+ SMs[index] +"\">" + SMs[index] + "</input>");
         }
         
         $("#SubjectiveMarkers").html(SMOptions.join("<br />"));
+        $("#SubjectiveMarkers").on("click", function(event) {
+            updateMenu(info, data);
+        });
     }
     
+    function updateMenu(info, data){
+       SMFilter = [];
+       $( "input:checkbox[name=SMFilter]:checked").each(function(){
+           SMFilter.push($(this).val());
+       });
+        createPropSymbols(info, data);
+    }
+        
+        
     function processData(data) {
         var pages = [];
         var pageTracker = [];
@@ -56,10 +72,20 @@ $(document).ready(function() {
     }
     
 
+    
+    
+    
     function createPropSymbols(info, data) {
-
+        if (map.hasLayer(markers)){
+            map.removeLayer(markers);
+        };
 		markers = L.geoJson(data, {
-
+            filter: function(feature, layer) {
+              if ($.inArray(feature.properties.SM,SMFilter) !== -1) {  
+                   return true;
+                }
+                return false;
+           },
 			pointToLayer: function(feature, latlng) {
 
 				return L.circleMarker(latlng, {
@@ -90,8 +116,9 @@ $(document).ready(function() {
 	} // end createPropSymbols()
     
     
-    function PropColor(UVIndex) {
+    function PropColor(SM) {
         return "#c897d9";
+        
         if(UVIndex >= "11") {
             return  "#b765a5";
         }
@@ -133,6 +160,8 @@ $(document).ready(function() {
 		return 5;
 
 	} // end calcPropRadius
+    
+    
 	function createLegend(min, max) {
 
 		if (min < 4) {
@@ -191,6 +220,8 @@ $(document).ready(function() {
 
 		legend.addTo(map);
 	} // end createLegend()
+    
+    
 	function createSliderUI(pages) {
 
 		var sliderControl = L.control({ position: 'bottomleft'} );
